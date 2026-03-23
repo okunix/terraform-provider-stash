@@ -1,0 +1,21 @@
+root = true
+
+[*]
+end_of_line = lf
+insert_final_newline = true
+charset = utf-8
+
+[{Justfile,justfile}]
+indent_style = space 
+indent_size = 4
+
+[*.go]
+indent_size = 4
+indent_style = tab 
+
+[VERSION]
+insert_final_newline = false
+
+[{*.yaml,*.yml}]
+indent_size = 2
+indent_style = space

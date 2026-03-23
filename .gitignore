@@ -1,0 +1,8 @@
+terraform-provider-stash
+bin/
+*.db
+*.db-shm
+*.db-wal
+*.env
+!example.env
+seed.sql
