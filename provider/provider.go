@@ -2,19 +2,18 @@ package provider
 
 import (
 	"context"
-	"time"
 
-	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	stash "github.com/okunix/stash-sdk/stash/v1"
 	"github.com/okunix/terraform-provider-stash/version"
-	"github.com/okunix/terraform-provider-stash/webutil"
 )
 
 func New() func() provider.Provider {
@@ -31,15 +30,15 @@ type StashProviderUserModel struct {
 }
 
 type StashProviderModel struct {
-	ApiVersion types.String            `tfsdk:"api_version"`
 	ApiServer  types.String            `tfsdk:"api_server"`
 	ApiToken   types.String            `tfsdk:"api_token"`
+	ApiVersion types.String            `tfsdk:"api_version"`
 	User       *StashProviderUserModel `tfsdk:"user"`
 }
 
 func (s *stashProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		NewSecretDataSource(),
+		NewWhoamiDataSource,
 	}
 }
 
@@ -73,19 +72,16 @@ func (s *stashProvider) Schema(
 		},
 		Blocks: map[string]schema.Block{
 			"user": schema.SingleNestedBlock{
-				Description: "stash-server user credentials",
-				Validators: []validator.Object{
-					objectvalidator.ConflictsWith(path.MatchRoot("token")),
-				},
+				Description: "Credentials for authenticating with the API.",
 				Attributes: map[string]schema.Attribute{
 					"username": schema.StringAttribute{
 						Required:    true,
-						Description: "account username",
+						Description: "Username for authentication.",
 					},
 					"password": schema.StringAttribute{
 						Required:    true,
 						Sensitive:   true,
-						Description: "account password",
+						Description: "Password for authentication.",
 					},
 				},
 			},
@@ -113,7 +109,22 @@ func (s *stashProvider) Configure(
 		return
 	}
 
-	client := webutil.NewClientWithAuth(data.ApiToken.ValueString(), 60*time.Second)
+	if data.ApiVersion.ValueString() != "v1" {
+		resp.Diagnostics.AddError("unsupported version", "unsupported version secified in provider")
+		return
+	}
+
+	client, err := stash.NewClient(
+		stash.WithAddr(data.ApiServer.ValueString()),
+		stash.WithUser(
+			data.User.Username.ValueString(),
+			data.User.Password.ValueString(),
+		),
+	)
+	if err != nil {
+		resp.Diagnostics.Append(diag.NewErrorDiagnostic("failed to initiate client", err.Error()))
+		return
+	}
 
 	resp.ResourceData = client
 	resp.DataSourceData = client
