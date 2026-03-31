@@ -99,6 +99,8 @@ func (w *whoamiDataSource) Configure(
 			"unexpected data source configure type",
 			fmt.Sprintf("expected *stash.Client, got %T", req.ProviderData),
 		)
+		return
 	}
+
 	w.client = client
 }

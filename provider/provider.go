@@ -126,6 +126,11 @@ func (s *stashProvider) Configure(
 		return
 	}
 
+	if err := client.Ping(ctx); err != nil {
+		resp.Diagnostics.AddError("stash server ping failed", err.Error())
+		return
+	}
+
 	resp.ResourceData = client
 	resp.DataSourceData = client
 }
