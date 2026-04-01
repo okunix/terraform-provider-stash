@@ -5,7 +5,7 @@ go 1.26.1
 require (
 	github.com/hashicorp/terraform-plugin-framework v1.19.0
 	github.com/hashicorp/terraform-plugin-framework-validators v0.19.0
-	github.com/okunix/stash-sdk v0.2.0
+	github.com/okunix/stash-sdk v0.2.1
 )
 
 require (

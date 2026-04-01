@@ -15,13 +15,6 @@ type whoamiDataSource struct {
 	client *stash.Client
 }
 
-type whoamiDataSourceModel struct {
-	ID        types.String `tfsdk:"id"`
-	Username  types.String `tfsdk:"username"`
-	CreatedAt types.String `tfsdk:"created_at"`
-	Locked    types.Bool   `tfsdk:"locked"`
-}
-
 var (
 	_ datasource.DataSource              = (*whoamiDataSource)(nil)
 	_ datasource.DataSourceWithConfigure = (*whoamiDataSource)(nil)
@@ -50,16 +43,17 @@ func (w *whoamiDataSource) Read(
 		return
 	}
 
-	var state whoamiDataSourceModel
+	var state userDataSourceModel
 	state.ID = types.StringValue(whoamiResp.ID)
 	state.Username = types.StringValue(whoamiResp.Username)
 	state.CreatedAt = types.StringValue(whoamiResp.CreatedAt.Format(time.RFC3339))
 	state.Locked = types.BoolValue(whoamiResp.Locked)
+	if whoamiResp.ExpiredAt != nil {
+		state.ExpiredAt = types.StringValue((*whoamiResp.ExpiredAt).Format(time.RFC3339))
+	}
+
 	diags := resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
 func (w *whoamiDataSource) Schema(
@@ -80,6 +74,10 @@ func (w *whoamiDataSource) Schema(
 			},
 			"locked": schema.BoolAttribute{
 				Computed: true,
+			},
+			"expired_at": schema.StringAttribute{
+				Computed: true,
+				Optional: true,
 			},
 		},
 	}
