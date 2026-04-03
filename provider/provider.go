@@ -42,6 +42,8 @@ func (s *stashProvider) DataSources(ctx context.Context) []func() datasource.Dat
 		NewUserByIDDataSource,
 		NewUserByNameDataSource,
 		NewStashByNameDataSource,
+		NewStashByIDDataSource,
+		NewSecretDataSource,
 	}
 }
 
