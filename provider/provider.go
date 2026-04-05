@@ -50,6 +50,7 @@ func (s *stashProvider) DataSources(ctx context.Context) []func() datasource.Dat
 func (s *stashProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		NewMemberResource,
+		NewSecretResource,
 	}
 }
 
