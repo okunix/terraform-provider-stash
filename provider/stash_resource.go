@@ -67,6 +67,8 @@ func (s *stashResource) Create(
 		return
 	}
 
+	s.client.Unlock(ctx, stashResponse.ID, plan.Password.ValueString())
+
 	plan.CreatedAt = types.StringValue(stashResponse.CreatedAt.Format(time.RFC3339))
 	plan.ID = types.StringValue(stashResponse.ID)
 	plan.MaintainerID = types.StringValue(stashResponse.MaintainerID)
@@ -181,9 +183,6 @@ func (s *stashResource) Schema(
 			},
 			"id": schema.StringAttribute{
 				Computed: true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
 			},
 			"locked": schema.BoolAttribute{
 				Computed: true,
