@@ -7,6 +7,8 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/okunix/stash-sdk/stash/v1"
 )
@@ -130,7 +132,7 @@ func (s *secretResource) Update(
 		return
 	}
 
-	state.StashID = plan.StashID
+	state.StashID = types.StringValue(newStashID)
 	state.Name = plan.Name
 	state.Value = plan.Value
 	state.LastUpdated = types.StringValue(time.Now().Format(time.RFC3339))
@@ -184,6 +186,9 @@ func (s *secretResource) Schema(
 		Attributes: map[string]schema.Attribute{
 			"stash_id": schema.StringAttribute{
 				Required: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"name": schema.StringAttribute{
 				Required: true,

@@ -51,6 +51,7 @@ func (s *stashProvider) Resources(ctx context.Context) []func() resource.Resourc
 	return []func() resource.Resource{
 		NewMemberResource,
 		NewSecretResource,
+		NewStashResource,
 	}
 }
 

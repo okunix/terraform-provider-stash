@@ -63,6 +63,12 @@ github.com/okunix/stash-sdk v0.2.2 h1:FIXoFXe/LU4fxkj7Mt70aAusSoJXIuahJATADQb9RJ
 github.com/okunix/stash-sdk v0.2.2/go.mod h1:N5Ar1yBHiSxB1ZZogEpeh/e5/vOB+2CqblfGO9Z3NH4=
 github.com/okunix/stash-sdk v0.2.3 h1:UBfkGuSgUzPD1zb15lAXvqXczK27fx2HDz2jya+oKG4=
 github.com/okunix/stash-sdk v0.2.3/go.mod h1:N5Ar1yBHiSxB1ZZogEpeh/e5/vOB+2CqblfGO9Z3NH4=
+github.com/okunix/stash-sdk v0.2.4 h1:wZTSLGsmP/1kYiJ6Cbzzj4e9iih9Sv/jTVo+DSTxqOg=
+github.com/okunix/stash-sdk v0.2.4/go.mod h1:N5Ar1yBHiSxB1ZZogEpeh/e5/vOB+2CqblfGO9Z3NH4=
+github.com/okunix/stash-sdk v0.2.5 h1:ngg0bwkaCI0LCuetSJ+Xc8p+kwL+rzkrByVk8lRJ9TY=
+github.com/okunix/stash-sdk v0.2.5/go.mod h1:N5Ar1yBHiSxB1ZZogEpeh/e5/vOB+2CqblfGO9Z3NH4=
+github.com/okunix/stash-sdk v0.2.6 h1:xFvPPQAd57D1dSBVgUpEP9F5Cs/v78ZevqtO4us6mWw=
+github.com/okunix/stash-sdk v0.2.6/go.mod h1:N5Ar1yBHiSxB1ZZogEpeh/e5/vOB+2CqblfGO9Z3NH4=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRIccs7FGNTlIRMkT8wgtp5eCXdBlqhYGL6U=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
