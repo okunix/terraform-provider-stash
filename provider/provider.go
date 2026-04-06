@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/providervalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -37,6 +38,11 @@ type StashProviderModel struct {
 	ApiVersion types.String            `tfsdk:"api_version"`
 	User       *StashProviderUserModel `tfsdk:"user"`
 }
+
+var (
+	_ provider.Provider                     = (*stashProvider)(nil)
+	_ provider.ProviderWithConfigValidators = (*stashProvider)(nil)
+)
 
 func (s *stashProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
@@ -83,13 +89,23 @@ func (s *stashProvider) Schema(
 				Description: "Credentials for authenticating with the API.",
 				Attributes: map[string]schema.Attribute{
 					"username": schema.StringAttribute{
-						Required:    true,
+						Optional:    true,
 						Description: "Username for authentication.",
+						Validators: []validator.String{
+							stringvalidator.AlsoRequires(
+								path.MatchRelative().AtParent().AtName("password"),
+							),
+						},
 					},
 					"password": schema.StringAttribute{
-						Required:    true,
+						Optional:    true,
 						Sensitive:   true,
 						Description: "Password for authentication.",
+						Validators: []validator.String{
+							stringvalidator.AlsoRequires(
+								path.MatchRelative().AtParent().AtName("username"),
+							),
+						},
 					},
 				},
 			},
@@ -122,13 +138,23 @@ func (s *stashProvider) Configure(
 		return
 	}
 
-	client, err := stash.NewClient(
-		stash.WithAddr(data.ApiServer.ValueString()),
-		stash.WithUser(
-			data.User.Username.ValueString(),
-			data.User.Password.ValueString(),
-		),
-	)
+	var client *stash.Client
+	var err error
+
+	if data.ApiToken.IsNull() {
+		client, err = stash.NewClient(
+			stash.WithAddr(data.ApiServer.ValueString()),
+			stash.WithUser(
+				data.User.Username.ValueString(),
+				data.User.Password.ValueString(),
+			),
+		)
+	} else {
+		client, err = stash.NewClient(
+			stash.WithAddr(data.ApiServer.ValueString()),
+			stash.WithToken(data.ApiToken.ValueString()),
+		)
+	}
 	if err != nil {
 		resp.Diagnostics.Append(diag.NewErrorDiagnostic("failed to initiate client", err.Error()))
 		return
@@ -141,4 +167,13 @@ func (s *stashProvider) Configure(
 
 	resp.ResourceData = client
 	resp.DataSourceData = client
+}
+
+func (s *stashProvider) ConfigValidators(ctx context.Context) []provider.ConfigValidator {
+	return []provider.ConfigValidator{
+		providervalidator.ExactlyOneOf(
+			path.MatchRoot("api_token"),
+			path.MatchRoot("user"),
+		),
+	}
 }
