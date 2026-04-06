@@ -1,4 +1,4 @@
-package provider
+package datasources
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/okunix/stash-sdk/stash/v1"
+	"github.com/okunix/terraform-provider-stash/models"
 )
 
 type whoamiDataSource struct {
@@ -43,7 +44,7 @@ func (w *whoamiDataSource) Read(
 		return
 	}
 
-	var state userDataSourceModel
+	var state models.UserModel
 	state.ID = types.StringValue(whoamiResp.ID)
 	state.Username = types.StringValue(whoamiResp.Username)
 	state.CreatedAt = types.StringValue(whoamiResp.CreatedAt.Format(time.RFC3339))

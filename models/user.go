@@ -1,8 +1,8 @@
-package provider
+package models
 
 import "github.com/hashicorp/terraform-plugin-framework/types"
 
-type userDataSourceModel struct {
+type UserModel struct {
 	ID        types.String `tfsdk:"id"`
 	Username  types.String `tfsdk:"username"`
 	Locked    types.Bool   `tfsdk:"locked"`

@@ -1,99 +1,86 @@
-package provider
+package datasources
 
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	stash "github.com/okunix/stash-sdk/stash/v1"
+	"github.com/okunix/terraform-provider-stash/models"
 )
 
-type stashByNameDataSource struct {
+type secretDataSource struct {
 	client *stash.Client
 }
 
 var (
-	_ datasource.DataSource              = (*stashByNameDataSource)(nil)
-	_ datasource.DataSourceWithConfigure = (*stashByNameDataSource)(nil)
+	_ datasource.DataSource              = (*secretDataSource)(nil)
+	_ datasource.DataSourceWithConfigure = (*secretDataSource)(nil)
 )
 
-func NewStashByNameDataSource() datasource.DataSource {
-	return &stashByNameDataSource{}
+func NewSecretDataSource() datasource.DataSource {
+	return &secretDataSource{}
 }
 
-func (s *stashByNameDataSource) Metadata(
+func (s *secretDataSource) Metadata(
 	ctx context.Context,
 	req datasource.MetadataRequest,
 	resp *datasource.MetadataResponse,
 ) {
-	resp.TypeName = req.ProviderTypeName + "_stash_by_name"
+	resp.TypeName = req.ProviderTypeName + "_secret"
 }
 
-func (s *stashByNameDataSource) Read(
+func (s *secretDataSource) Read(
 	ctx context.Context,
 	req datasource.ReadRequest,
 	resp *datasource.ReadResponse,
 ) {
-	var state stashResponseModel
+	var state models.SecretModel
 	diag := req.Config.Get(ctx, &state)
 	resp.Diagnostics.Append(diag...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	stashResponse, err := s.client.GetStashByName(ctx,
-		state.MaintainerID.ValueString(),
+
+	value, err := s.client.GetSecretsEntry(
+		ctx,
+		state.StashID.ValueString(),
 		state.Name.ValueString(),
 	)
 	if err != nil {
-		resp.Diagnostics.AddError("failed to fetch stash by name", err.Error())
+		resp.Diagnostics.AddError("failed to fetch secret", err.Error())
 		return
 	}
 
-	state.CreatedAt = types.StringValue(stashResponse.CreatedAt.Format(time.RFC3339))
-	if stashResponse.Description != nil {
-		state.Description = types.StringValue(*stashResponse.Description)
-	}
-	state.Locked = types.BoolValue(stashResponse.Locked)
-	state.ID = types.StringValue(stashResponse.ID)
+	state.Value = types.StringValue(value)
 
 	diag = resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diag...)
 }
 
-func (s *stashByNameDataSource) Schema(
+func (s *secretDataSource) Schema(
 	ctx context.Context,
 	req datasource.SchemaRequest,
 	resp *datasource.SchemaResponse,
 ) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Computed: true,
+			"stash_id": schema.StringAttribute{
+				Required: true,
 			},
 			"name": schema.StringAttribute{
 				Required: true,
 			},
-			"description": schema.StringAttribute{
-				Computed: true,
-				Optional: true,
-			},
-			"maintainer_id": schema.StringAttribute{
-				Required: true,
-			},
-			"created_at": schema.StringAttribute{
-				Computed: true,
-			},
-			"locked": schema.BoolAttribute{
+			"value": schema.StringAttribute{
 				Computed: true,
 			},
 		},
 	}
 }
 
-func (s *stashByNameDataSource) Configure(
+func (s *secretDataSource) Configure(
 	ctx context.Context,
 	req datasource.ConfigureRequest,
 	resp *datasource.ConfigureResponse,

@@ -1,4 +1,4 @@
-package provider
+package resources
 
 import (
 	"context"
@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/okunix/stash-sdk/stash/v1"
+	"github.com/okunix/terraform-provider-stash/models"
 )
 
 type stashResource struct {
@@ -26,18 +27,12 @@ func NewStashResource() resource.Resource {
 	return &stashResource{}
 }
 
-type stashResourceModel struct {
-	stashResponseModel
-	Password    types.String `tfsdk:"password"`
-	LastUpdated types.String `tfsdk:"last_updated"`
-}
-
 func (s *stashResource) Create(
 	ctx context.Context,
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
-	var plan stashResourceModel
+	var plan models.StashResourceModel
 	diag := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diag...)
 	if resp.Diagnostics.HasError() {
@@ -83,7 +78,7 @@ func (s *stashResource) Delete(
 	req resource.DeleteRequest,
 	resp *resource.DeleteResponse,
 ) {
-	var state stashResourceModel
+	var state models.StashResourceModel
 	diag := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diag...)
 	if resp.Diagnostics.HasError() {
@@ -101,7 +96,7 @@ func (s *stashResource) Read(
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
-	var state stashResourceModel
+	var state models.StashResourceModel
 	diag := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diag...)
 	if resp.Diagnostics.HasError() {
@@ -132,8 +127,8 @@ func (s *stashResource) Update(
 	req resource.UpdateRequest,
 	resp *resource.UpdateResponse,
 ) {
-	var plan stashResourceModel
-	var state stashResourceModel
+	var plan models.StashResourceModel
+	var state models.StashResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {

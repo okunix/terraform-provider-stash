@@ -1,4 +1,4 @@
-package provider
+package datasources
 
 import (
 	"context"
@@ -9,59 +9,61 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/okunix/stash-sdk/stash/v1"
+	"github.com/okunix/terraform-provider-stash/models"
 )
 
-type userByIDDataSource struct {
+var (
+	_ datasource.DataSource              = (*userByNameDataSource)(nil)
+	_ datasource.DataSourceWithConfigure = (*userByNameDataSource)(nil)
+)
+
+type userByNameDataSource struct {
 	client *stash.Client
 }
 
-var (
-	_ datasource.DataSource              = (*userByIDDataSource)(nil)
-	_ datasource.DataSourceWithConfigure = (*userByIDDataSource)(nil)
-)
-
-func NewUserByIDDataSource() datasource.DataSource {
-	return &userByIDDataSource{}
+func NewUserByNameDataSource() datasource.DataSource {
+	return &userByNameDataSource{}
 }
 
-func (u *userByIDDataSource) Metadata(
+func (u *userByNameDataSource) Metadata(
 	ctx context.Context,
 	req datasource.MetadataRequest,
 	resp *datasource.MetadataResponse,
 ) {
-	resp.TypeName = req.ProviderTypeName + "_user_by_id"
+	resp.TypeName = req.ProviderTypeName + "_user_by_name"
 }
 
-func (u *userByIDDataSource) Read(
+func (u *userByNameDataSource) Read(
 	ctx context.Context,
 	req datasource.ReadRequest,
 	resp *datasource.ReadResponse,
 ) {
-	var state userDataSourceModel
-	diag := req.Config.Get(ctx, &state)
-	resp.Diagnostics.Append(diag...)
+	var state models.UserModel
+	diags := req.Config.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	userResp, err := u.client.GetUserByID(ctx, state.ID.ValueString())
+	// this endpoint handles both username and id
+	userResp, err := u.client.GetUserByID(ctx, state.Username.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError("failed to fetch user information", err.Error())
+		resp.Diagnostics.AddError("failed to fetch username by id", err.Error())
 		return
 	}
 
 	state.CreatedAt = types.StringValue(userResp.CreatedAt.Format(time.RFC3339))
-	state.Username = types.StringValue(userResp.Username)
+	state.ID = types.StringValue(userResp.ID)
 	state.Locked = types.BoolValue(userResp.Locked)
 	if userResp.ExpiredAt != nil {
 		state.ExpiredAt = types.StringValue((*userResp.ExpiredAt).Format(time.RFC3339))
 	}
 
-	diag = resp.State.Set(ctx, &state)
-	resp.Diagnostics.Append(diag...)
+	diags = resp.State.Set(ctx, &state)
+	resp.Diagnostics.Append(diags...)
 }
 
-func (u *userByIDDataSource) Schema(
+func (u *userByNameDataSource) Schema(
 	ctx context.Context,
 	req datasource.SchemaRequest,
 	resp *datasource.SchemaResponse,
@@ -69,31 +71,26 @@ func (u *userByIDDataSource) Schema(
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Required:    true,
-				Description: "user id",
+				Computed: true,
 			},
 			"username": schema.StringAttribute{
-				Computed:    true,
-				Description: "user name",
+				Required: true,
 			},
 			"locked": schema.BoolAttribute{
-				Computed:    true,
-				Description: "is user account locked",
+				Computed: true,
 			},
 			"created_at": schema.StringAttribute{
-				Computed:    true,
-				Description: "when user was created",
+				Computed: true,
 			},
 			"expired_at": schema.StringAttribute{
-				Computed:    true,
-				Optional:    true,
-				Description: "when user expires",
+				Computed: true,
+				Optional: true,
 			},
 		},
 	}
 }
 
-func (u *userByIDDataSource) Configure(
+func (u *userByNameDataSource) Configure(
 	ctx context.Context,
 	req datasource.ConfigureRequest,
 	resp *datasource.ConfigureResponse,
@@ -101,6 +98,7 @@ func (u *userByIDDataSource) Configure(
 	if req.ProviderData == nil {
 		return
 	}
+
 	client, ok := req.ProviderData.(*stash.Client)
 	if !ok {
 		resp.Diagnostics.AddError(
@@ -109,5 +107,6 @@ func (u *userByIDDataSource) Configure(
 		)
 		return
 	}
+
 	u.client = client
 }

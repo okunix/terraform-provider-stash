@@ -1,4 +1,4 @@
-package provider
+package resources
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/okunix/stash-sdk/stash/v1"
+	"github.com/okunix/terraform-provider-stash/models"
 )
 
 type memberResource struct {
@@ -19,13 +20,6 @@ var (
 	_ resource.Resource              = (*memberResource)(nil)
 	_ resource.ResourceWithConfigure = (*memberResource)(nil)
 )
-
-type memberModel struct {
-	StashID     types.String `tfsdk:"stash_id"`
-	UserID      types.String `tfsdk:"user_id"`
-	Since       types.String `tfsdk:"since"`
-	LastUpdated types.String `tfsdk:"last_updated"`
-}
 
 func NewMemberResource() resource.Resource {
 	return &memberResource{}
@@ -44,7 +38,7 @@ func (m *memberResource) Create(
 	req resource.CreateRequest,
 	resp *resource.CreateResponse,
 ) {
-	var plan memberModel
+	var plan models.MemberResourceModel
 	diag := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diag...)
 	if resp.Diagnostics.HasError() {
@@ -81,7 +75,7 @@ func (m *memberResource) Read(
 	req resource.ReadRequest,
 	resp *resource.ReadResponse,
 ) {
-	var state memberModel
+	var state models.MemberResourceModel
 	diag := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diag...)
 	if resp.Diagnostics.HasError() {
@@ -109,14 +103,14 @@ func (m *memberResource) Update(
 	req resource.UpdateRequest,
 	resp *resource.UpdateResponse,
 ) {
-	var plan memberModel
+	var plan models.MemberResourceModel
 	diag := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diag...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	var state memberModel
+	var state models.MemberResourceModel
 	diag = req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diag...)
 	if resp.Diagnostics.HasError() {
@@ -167,7 +161,7 @@ func (m *memberResource) Delete(
 	req resource.DeleteRequest,
 	resp *resource.DeleteResponse,
 ) {
-	var state memberModel
+	var state models.MemberResourceModel
 	diag := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diag...)
 	if resp.Diagnostics.HasError() {

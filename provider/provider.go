@@ -13,6 +13,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	stash "github.com/okunix/stash-sdk/stash/v1"
+	"github.com/okunix/terraform-provider-stash/datasources"
+	"github.com/okunix/terraform-provider-stash/resources"
 	"github.com/okunix/terraform-provider-stash/version"
 )
 
@@ -38,20 +40,20 @@ type StashProviderModel struct {
 
 func (s *stashProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		NewWhoamiDataSource,
-		NewUserByIDDataSource,
-		NewUserByNameDataSource,
-		NewStashByNameDataSource,
-		NewStashByIDDataSource,
-		NewSecretDataSource,
+		datasources.NewWhoamiDataSource,
+		datasources.NewUserByIDDataSource,
+		datasources.NewUserByNameDataSource,
+		datasources.NewStashByNameDataSource,
+		datasources.NewStashByIDDataSource,
+		datasources.NewSecretDataSource,
 	}
 }
 
 func (s *stashProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		NewMemberResource,
-		NewSecretResource,
-		NewStashResource,
+		resources.NewMemberResource,
+		resources.NewSecretResource,
+		resources.NewStashResource,
 	}
 }
 

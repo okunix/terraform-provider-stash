@@ -1,4 +1,4 @@
-package provider
+package datasources
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/okunix/stash-sdk/stash/v1"
+	"github.com/okunix/terraform-provider-stash/models"
 )
 
 type stashByIDDataSource struct {
@@ -37,7 +38,7 @@ func (s *stashByIDDataSource) Read(
 	req datasource.ReadRequest,
 	resp *datasource.ReadResponse,
 ) {
-	var state stashResponseModel
+	var state models.StashModel
 	diag := req.Config.Get(ctx, &state)
 	resp.Diagnostics.Append(diag...)
 	if resp.Diagnostics.HasError() {
