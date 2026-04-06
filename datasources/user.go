@@ -5,35 +5,38 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/datasourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/okunix/stash-sdk/stash/v1"
 	"github.com/okunix/terraform-provider-stash/models"
 )
 
 var (
-	_ datasource.DataSource              = (*userByNameDataSource)(nil)
-	_ datasource.DataSourceWithConfigure = (*userByNameDataSource)(nil)
+	_ datasource.DataSource                     = (*userDataSource)(nil)
+	_ datasource.DataSourceWithConfigure        = (*userDataSource)(nil)
+	_ datasource.DataSourceWithConfigValidators = (*userDataSource)(nil)
 )
 
-type userByNameDataSource struct {
+type userDataSource struct {
 	client *stash.Client
 }
 
-func NewUserByNameDataSource() datasource.DataSource {
-	return &userByNameDataSource{}
+func NewUserDataSource() datasource.DataSource {
+	return &userDataSource{}
 }
 
-func (u *userByNameDataSource) Metadata(
+func (u *userDataSource) Metadata(
 	ctx context.Context,
 	req datasource.MetadataRequest,
 	resp *datasource.MetadataResponse,
 ) {
-	resp.TypeName = req.ProviderTypeName + "_user_by_name"
+	resp.TypeName = req.ProviderTypeName + "_user"
 }
 
-func (u *userByNameDataSource) Read(
+func (u *userDataSource) Read(
 	ctx context.Context,
 	req datasource.ReadRequest,
 	resp *datasource.ReadResponse,
@@ -45,25 +48,34 @@ func (u *userByNameDataSource) Read(
 		return
 	}
 
-	// this endpoint handles both username and id
-	userResp, err := u.client.GetUserByID(ctx, state.Username.ValueString())
+	var userResponse *stash.UserResponse
+	var err error
+
+	if !state.Username.IsNull() {
+		userResponse, err = u.client.GetUserByID(ctx, state.Username.ValueString())
+	} else if !state.ID.IsNull() {
+		userResponse, err = u.client.GetUserByID(ctx, state.ID.ValueString())
+	} else {
+		userResponse, err = u.client.Whoami(ctx)
+	}
 	if err != nil {
-		resp.Diagnostics.AddError("failed to fetch username by id", err.Error())
+		resp.Diagnostics.AddError("failed to fetch user", err.Error())
 		return
 	}
 
-	state.CreatedAt = types.StringValue(userResp.CreatedAt.Format(time.RFC3339))
-	state.ID = types.StringValue(userResp.ID)
-	state.Locked = types.BoolValue(userResp.Locked)
-	if userResp.ExpiredAt != nil {
-		state.ExpiredAt = types.StringValue((*userResp.ExpiredAt).Format(time.RFC3339))
+	state.CreatedAt = types.StringValue(userResponse.CreatedAt.Format(time.RFC3339))
+	state.ID = types.StringValue(userResponse.ID)
+	state.Username = types.StringValue(userResponse.Username)
+	state.Locked = types.BoolValue(userResponse.Locked)
+	if userResponse.ExpiredAt != nil {
+		state.ExpiredAt = types.StringValue((*userResponse.ExpiredAt).Format(time.RFC3339))
 	}
 
 	diags = resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 }
 
-func (u *userByNameDataSource) Schema(
+func (u *userDataSource) Schema(
 	ctx context.Context,
 	req datasource.SchemaRequest,
 	resp *datasource.SchemaResponse,
@@ -71,10 +83,10 @@ func (u *userByNameDataSource) Schema(
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Computed: true,
+				Optional: true,
 			},
 			"username": schema.StringAttribute{
-				Required: true,
+				Optional: true,
 			},
 			"locked": schema.BoolAttribute{
 				Computed: true,
@@ -90,7 +102,7 @@ func (u *userByNameDataSource) Schema(
 	}
 }
 
-func (u *userByNameDataSource) Configure(
+func (u *userDataSource) Configure(
 	ctx context.Context,
 	req datasource.ConfigureRequest,
 	resp *datasource.ConfigureResponse,
@@ -109,4 +121,13 @@ func (u *userByNameDataSource) Configure(
 	}
 
 	u.client = client
+}
+
+func (u *userDataSource) ConfigValidators(ctx context.Context) []datasource.ConfigValidator {
+	return []datasource.ConfigValidator{
+		datasourcevalidator.Conflicting(
+			path.MatchRoot("username"),
+			path.MatchRoot("id"),
+		),
+	}
 }

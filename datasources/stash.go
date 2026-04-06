@@ -5,35 +5,38 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/datasourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	stash "github.com/okunix/stash-sdk/stash/v1"
 	"github.com/okunix/terraform-provider-stash/models"
 )
 
-type stashByNameDataSource struct {
+type stashDataSource struct {
 	client *stash.Client
 }
 
 var (
-	_ datasource.DataSource              = (*stashByNameDataSource)(nil)
-	_ datasource.DataSourceWithConfigure = (*stashByNameDataSource)(nil)
+	_ datasource.DataSource                     = (*stashDataSource)(nil)
+	_ datasource.DataSourceWithConfigure        = (*stashDataSource)(nil)
+	_ datasource.DataSourceWithConfigValidators = (*stashDataSource)(nil)
 )
 
-func NewStashByNameDataSource() datasource.DataSource {
-	return &stashByNameDataSource{}
+func NewStashDataSource() datasource.DataSource {
+	return &stashDataSource{}
 }
 
-func (s *stashByNameDataSource) Metadata(
+func (s *stashDataSource) Metadata(
 	ctx context.Context,
 	req datasource.MetadataRequest,
 	resp *datasource.MetadataResponse,
 ) {
-	resp.TypeName = req.ProviderTypeName + "_stash_by_name"
+	resp.TypeName = req.ProviderTypeName + "_stash"
 }
 
-func (s *stashByNameDataSource) Read(
+func (s *stashDataSource) Read(
 	ctx context.Context,
 	req datasource.ReadRequest,
 	resp *datasource.ReadResponse,
@@ -44,15 +47,27 @@ func (s *stashByNameDataSource) Read(
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	stashResponse, err := s.client.GetStashByName(ctx,
-		state.MaintainerID.ValueString(),
-		state.Name.ValueString(),
-	)
+	var stashResponse *stash.StashResponse
+	var err error
+
+	if !state.Name.IsNull() {
+		stashResponse, err = s.client.GetStashByName(ctx,
+			state.MaintainerID.ValueString(),
+			state.Name.ValueString(),
+		)
+	} else if !state.ID.IsNull() {
+		stashResponse, err = s.client.GetStashByID(ctx, state.ID.ValueString())
+	} else {
+		resp.Diagnostics.AddError("failed to fetch stash", "no request data provided")
+		return
+	}
 	if err != nil {
-		resp.Diagnostics.AddError("failed to fetch stash by name", err.Error())
+		resp.Diagnostics.AddError("failed to fetch stash", err.Error())
 		return
 	}
 
+	state.Name = types.StringValue(stashResponse.Name)
+	state.MaintainerID = types.StringValue(stashResponse.MaintainerID)
 	state.CreatedAt = types.StringValue(stashResponse.CreatedAt.Format(time.RFC3339))
 	if stashResponse.Description != nil {
 		state.Description = types.StringValue(*stashResponse.Description)
@@ -64,7 +79,7 @@ func (s *stashByNameDataSource) Read(
 	resp.Diagnostics.Append(diag...)
 }
 
-func (s *stashByNameDataSource) Schema(
+func (s *stashDataSource) Schema(
 	ctx context.Context,
 	req datasource.SchemaRequest,
 	resp *datasource.SchemaResponse,
@@ -72,17 +87,17 @@ func (s *stashByNameDataSource) Schema(
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Computed: true,
+				Optional: true,
 			},
 			"name": schema.StringAttribute{
-				Required: true,
+				Optional: true,
 			},
 			"description": schema.StringAttribute{
 				Computed: true,
 				Optional: true,
 			},
 			"maintainer_id": schema.StringAttribute{
-				Required: true,
+				Optional: true,
 			},
 			"created_at": schema.StringAttribute{
 				Computed: true,
@@ -94,7 +109,7 @@ func (s *stashByNameDataSource) Schema(
 	}
 }
 
-func (s *stashByNameDataSource) Configure(
+func (s *stashDataSource) Configure(
 	ctx context.Context,
 	req datasource.ConfigureRequest,
 	resp *datasource.ConfigureResponse,
@@ -113,4 +128,27 @@ func (s *stashByNameDataSource) Configure(
 	}
 
 	s.client = client
+}
+
+func (s *stashDataSource) ConfigValidators(
+	ctx context.Context,
+) []datasource.ConfigValidator {
+	return []datasource.ConfigValidator{
+		datasourcevalidator.ExactlyOneOf(
+			path.MatchRoot("id"),
+			path.MatchRoot("name"),
+		),
+		datasourcevalidator.Conflicting(
+			path.MatchRoot("id"),
+			path.MatchRoot("name"),
+		),
+		datasourcevalidator.Conflicting(
+			path.MatchRoot("id"),
+			path.MatchRoot("maintainer_id"),
+		),
+		datasourcevalidator.RequiredTogether(
+			path.MatchRoot("name"),
+			path.MatchRoot("maintainer_id"),
+		),
+	}
 }

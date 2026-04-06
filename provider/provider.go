@@ -40,11 +40,8 @@ type StashProviderModel struct {
 
 func (s *stashProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		datasources.NewWhoamiDataSource,
-		datasources.NewUserByIDDataSource,
-		datasources.NewUserByNameDataSource,
-		datasources.NewStashByNameDataSource,
-		datasources.NewStashByIDDataSource,
+		datasources.NewUserDataSource,
+		datasources.NewStashDataSource,
 		datasources.NewSecretDataSource,
 	}
 }
