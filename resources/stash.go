@@ -171,7 +171,8 @@ func (s *stashResource) Schema(
 				Optional: true,
 			},
 			"password": schema.StringAttribute{
-				Required: true,
+				Required:  true,
+				Sensitive: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},

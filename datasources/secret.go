@@ -74,7 +74,8 @@ func (s *secretDataSource) Schema(
 				Required: true,
 			},
 			"value": schema.StringAttribute{
-				Computed: true,
+				Computed:  true,
+				Sensitive: true,
 			},
 		},
 	}
